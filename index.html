@@ -151,6 +151,12 @@ footer{text-align:center;font-size:12px;color:var(--mut);padding:20px 0 10px}
 <script>
 const WA='';            // رقم واتساب بصيغة 968XXXXXXXX (اختياري)
 const ENDPOINT='https://script.google.com/macros/s/AKfycbw2YzXlepcX2WSfuBOyRVx6kyBxk0VudVlUgDbPUmmb1MWhW1ZQppvPUS_XxKyoGQC4zw/exec';      // رابط استقبال الطلبات (Google Sheets / Formspree / API) بعد الاستضافة
+const META_PIXEL_ID='1717283932700624';    // معرّف بكسل ميتا (فيسبوك/انستغرام)
+const TIKTOK_PIXEL_ID='';  // معرّف بكسل تيك توك
+try{
+if(META_PIXEL_ID){!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init',META_PIXEL_ID);fbq('track','PageView');}
+if(TIKTOK_PIXEL_ID){!function(w,d,t){w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var i="https://analytics.tiktok.com/i18n/pixel/events.js";ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=i,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};var o=document.createElement("script");o.type="text/javascript",o.async=!0,o.src=i+"?sdkid="+e+"&lib="+t;var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(o,a)};ttq.load(TIKTOK_PIXEL_ID);ttq.page();}(window,document,'ttq');}
+}catch(x){}
 const O={1:{n:'عرض التجربة',b:1,p:16},2:{n:'اشتري 2 والثالثة هدية',b:3,p:30},3:{n:'اشتري 3 واثنتين هدية',b:5,p:47}};
 const C=['مسقط','السيب','بوشر','مطرح','العامرات','قريات','صلالة','صحار','نزوى','صور','الرستاق','البريمي','عبري','إبراء','بهلاء','سمائل','الخابورة','شناص','ينقل','أدم','الدقم','أخرى'];
 const T=['صباحاً (9 - 12)','الظهر (12 - 4)','العصر (4 - 7)','المساء (7 - 10)','أي وقت'];
@@ -177,6 +183,7 @@ $('[data-f]').forEach(f=>{
   if(!fm.city.value)return er.textContent='اختاري مدينتج';
   er.textContent='';fm.querySelector('button').disabled=true;const L={name,phone:'+968'+ph,city:fm.city.value,time:fm.time.value,offer:O[sel].n,boxes:O[sel].b,total:O[sel].p,src:location.search.slice(1)};
   if(ENDPOINT){try{await fetch(ENDPOINT,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(L)})}catch(x){}}
+  try{if(window.fbq)fbq('track','Lead',{value:L.total,currency:'OMR',content_name:L.offer});if(window.ttq)ttq.track('SubmitForm',{value:L.total,currency:'OMR',content_name:L.offer})}catch(x){}
   document.getElementById('tn').textContent=name;document.getElementById('to').textContent=L.offer;document.getElementById('tb').textContent=L.boxes+' علب';
   document.getElementById('tp').textContent=L.phone;document.getElementById('tt').textContent=L.time;document.getElementById('tm').textContent=L.total;
   if(WA){const a=document.getElementById('wa');a.style.display='block';a.href='https://wa.me/'+WA+'?text='+encodeURIComponent('طلب جديد: '+L.name+' | '+L.phone+' | '+L.city+' | '+L.offer+' | '+L.total+' ر.ع')}
