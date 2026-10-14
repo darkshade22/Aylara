@@ -194,14 +194,14 @@ $('[data-f]').forEach(f=>{
  f.innerHTML='<h3>احجزي طلبج الحين</h3><p>اتركي بياناتج وراح نتصل بج لتأكيد الطلب</p>'+
  '<div class="pills">'+[1,2,3].map(k=>'<button type="button" data-k="'+k+'">'+O[k].p+' د.ب</button>').join('')+'</div><div class="sum"></div>'+
  '<form novalidate><label>الاسم</label><input name="name" autocomplete="name" placeholder="اسمج الكريم">'+
- '<label>رقم الهاتف · +973</label><input name="phone" type="tel" inputmode="numeric" dir="ltr" style="text-align:right" placeholder="3XXXXXXX" autocomplete="tel">'+
+ '<label>رقم الهاتف · +973</label><input name="phone" type="tel" inputmode="numeric" dir="ltr" style="text-align:right" placeholder="XXXXXXXX" autocomplete="tel">'+
  '<label>المدينة</label><select name="city"><option value="">اختاري المدينة</option>'+C.map(c=>'<option>'+c+'</option>').join('')+'</select>'+
  '<div class="err"></div><button class="btn" type="submit">أكّدي طلبج الحين</button></form><p class="fine">⏱ دقيقة وحدة · 📞 نتصل بج للتأكيد · 🔒 بياناتج بس للتواصل معج</p>';
  f.querySelector('form').onsubmit=async e=>{
   e.preventDefault();const fm=e.target,er=fm.querySelector('.err');
-  const name=fm.name.value.trim(),ph=fm.phone.value.replace(/[\s+\-]/g,'').replace(/^(00)?973/,'').replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+  const name=fm.name.value.trim();let ph=fm.phone.value.replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/\D/g,'');if(ph.length>8)ph=ph.replace(/^(00)?973/,'');
   if(name.length<2)return er.textContent='اكتبي اسمج من فضلج';
-  if(!/^[136]\d{7}$/.test(ph))return er.textContent='رقم الهاتف غير صحيح (8 أرقام)';
+  if(!/^\d{8}$/.test(ph))return er.textContent='رقم الهاتف غير صحيح (8 أرقام)';
   if(!fm.city.value)return er.textContent='اختاري مدينتج';
   er.textContent='';const sb=fm.querySelector('button');sb.disabled=true;sb.innerHTML='<span class="sp"></span> جاري إرسال طلبج...';const L={name,phone:'+973'+ph,city:fm.city.value,time:'',offer:O[sel].n,boxes:O[sel].b,total:O[sel].p,currency:'BHD',product:'JoyPretty Vitamin C Eye Serum',src:location.search.slice(1)};
   if(ENDPOINT){try{await fetch(ENDPOINT,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(L)})}catch(x){}}
