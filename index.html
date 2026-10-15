@@ -205,7 +205,7 @@ $('[data-f]').forEach(f=>{
   if(!fm.city.value)return er.textContent='اختاري مدينتج';
   er.textContent='';const sb=fm.querySelector('button');sb.disabled=true;sb.innerHTML='<span class="sp"></span> جاري إرسال طلبج...';const L={name,phone:'+973'+ph,city:fm.city.value,time:'',offer:O[sel].n,boxes:O[sel].b,total:O[sel].p,currency:'BHD',product:'JoyPretty Vitamin C Eye Serum',src:location.search.slice(1)};
   if(ENDPOINT){try{await fetch(ENDPOINT,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(L)})}catch(x){}}
-  try{if(window.fbq)fbq('track','Lead',{value:L.total,currency:'BHD',content_name:'JoyPretty Vitamin C Eye Serum - '+L.offer});if(window.ttq)ttq.track('SubmitForm',{value:L.total,currency:'BHD',content_name:'JoyPretty Vitamin C Eye Serum - '+L.offer})}catch(x){}
+  try{const eid='l'+Date.now()+Math.random().toString(36).slice(2,8);if(window.fbq)fbq('track','Lead',{value:L.total,currency:'BHD',content_name:'JoyPretty Vitamin C Eye Serum - '+L.offer},{eventID:eid});sendCAPI(L,eid);if(window.ttq)ttq.track('SubmitForm',{value:L.total,currency:'BHD',content_name:'JoyPretty Vitamin C Eye Serum - '+L.offer})}catch(x){}
   await new Promise(r=>setTimeout(r,700));showThanks(L);
  };
 });
@@ -214,6 +214,8 @@ function showThanks(L){document.getElementById('tn').textContent=L.name;document
   document.getElementById('tp').textContent=L.phone;document.getElementById('tm').textContent=L.total;document.getElementById('ts').textContent=cnt(L.boxes)+' بـ '+L.total+' د.ب';
   if(WA){const a=document.getElementById('wa');a.style.display='block';a.href='https://wa.me/'+WA+'?text='+encodeURIComponent('طلب جديد: '+L.name+' | '+L.phone+' | '+L.city+' | '+L.offer+' | '+L.total+' د.ب')}
   document.getElementById('main').style.display='none';document.getElementById('thanks').style.display='block';scrollTo(0,0);confetti()}
+function ck(n){const m=document.cookie.match('(?:^|; )'+n+'=([^;]*)');return m?decodeURIComponent(m[1]):''}
+function sendCAPI(L,eid){try{const q=new URLSearchParams(location.search).get('fbclid');let fbc=ck('_fbc');if(!fbc&&q)fbc='fb.1.'+Date.now()+'.'+q;fetch('/api/capi',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json'},body:JSON.stringify({event_id:eid,name:L.name,phone:L.phone,value:L.total,offer:L.offer,url:location.href,fbp:ck('_fbp'),fbc})}).catch(()=>{})}catch(x){}}
 function confetti(){if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;const c=['#e8751a','#f6b36b','#ffd27d','#d4600c','#fff'];for(let i=0;i<46;i++){const s=document.createElement('i');s.className='cf';s.style.cssText='left:'+Math.random()*100+'vw;background:'+c[i%5]+';animation-delay:'+Math.random()*.5+'s;animation-duration:'+(1.8+Math.random()*1.6)+'s';document.body.appendChild(s);setTimeout(()=>s.remove(),4200)}}
 document.addEventListener('pointerdown',e=>{const b=e.target.closest('.btn,.pills button');if(!b)return;const r=b.getBoundingClientRect(),z=Math.max(r.width,r.height),x=document.createElement('span');x.className='rip';x.style.cssText='width:'+z+'px;height:'+z+'px;left:'+(e.clientX-r.left-z/2)+'px;top:'+(e.clientY-r.top-z/2)+'px';b.appendChild(x);setTimeout(()=>x.remove(),600)});
 if('IntersectionObserver' in window){
