@@ -1,53 +1,77 @@
-'use strict';
-const { createHash } = require('node:crypto');
-const hash = value => createHash('sha256').update(value).digest('hex');
+const crypto = require('crypto');
+const sha = v => crypto.createHash('sha256').update(String(v).trim().toLowerCase()).digest('hex');
 
-module.exports = async function handler(req, res) {
+module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-  const { META_PIXEL_ID, META_CAPI_TOKEN, META_TEST_CODE, SITE_ORIGIN } = process.env;
-  const version = process.env.META_GRAPH_VERSION || 'v25.0';
-  if (META_PIXEL_ID !== '1114550287797449' || !META_CAPI_TOKEN || !SITE_ORIGIN || !/^v\d+\.0$/.test(version)) {
-    return res.status(503).json({ error: 'Tracking configuration unavailable' });
-  }
-  let origin;
-  try { origin = new URL(SITE_ORIGIN).origin; } catch { return res.status(503).json({ error: 'Tracking configuration unavailable' }); }
-  if (req.headers.origin !== origin) return res.status(403).json({ error: 'Origin not allowed' });
-  if (!String(req.headers['content-type'] || '').startsWith('application/json')) return res.status(415).json({ error: 'JSON required' });
-  let body;
+  if (req.method !== 'POST') return res.status(405).json({ ok: false });
+
+  const PIXEL = (process.env.META_PIXEL_ID || '1114550287797449').trim();
+  const TEST_CODE = (process.env.META_TEST_CODE || '').trim();
+  const TOKEN = process.env.META_CAPI_TOKEN;
+  if (!TOKEN) return res.status(500).json({ ok: false, error: 'META_CAPI_TOKEN is missing' });
+
+  let b = req.body;
+  if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = {}; } }
+  b = b || {};
+
+  const phone = String(b.phone || '').replace(/\D/g, '');
+  if (!b.event_id || phone.length < 8) return res.status(400).json({ ok: false });
+
+  const first = String(b.name || '').trim().split(/\s+/)[0];
+  const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+
+  const user = {
+    ph: [sha(phone)],
+    country: [sha('bh')],
+    client_user_agent: req.headers['user-agent'] || ''
+  };
+  if (first) user.fn = [sha(first)];
+  if (ip) user.client_ip_address = ip;
+  if (b.fbp) user.fbp = b.fbp;
+  if (b.fbc) user.fbc = b.fbc;
+
+  const payload = {
+    data: [{
+      event_name: 'Purchase',
+      event_time: Math.floor(Date.now() / 1000),
+      event_id: String(b.event_id),
+      event_source_url: b.url,
+      action_source: 'website',
+      user_data: user,
+      custom_data: {
+        value: Number(b.value) || 0,
+        currency: 'BHD',
+        content_name: 'JoyPretty Vitamin C Eye Serum - ' + (b.offer || '')
+      }
+    }]
+  };
+  if (TEST_CODE) payload.test_event_code = TEST_CODE;
+
+  const ver = (process.env.META_API_VERSION || 'v23.0').trim();
   try {
-    if (Buffer.byteLength(typeof req.body === 'string' ? req.body : JSON.stringify(req.body || {})) > 8192) return res.status(413).json({ error: 'Payload too large' });
-    body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-  } catch { return res.status(400).json({ error: 'Invalid JSON' }); }
-  if (!body || typeof body !== 'object') return res.status(400).json({ error: 'Invalid event' });
-  const { event_id, phone, value, url, fbp, fbc } = body;
-  if (typeof event_id !== 'string' || !/^purchase_[0-9a-f-]{36}$/.test(event_id) || typeof phone !== 'string' || !/^\+973\d{8}$/.test(phone) || ![14,22,33].includes(value)) return res.status(400).json({ error: 'Invalid event' });
-  let source;
-  try { source = new URL(url); if (source.origin !== origin) throw new Error(); } catch { return res.status(400).json({ error: 'Invalid source' }); }
-  // Drop query parameters and fragments so customer data in URLs is never forwarded.
-  const user_data = { ph: [hash(phone.replace(/\D/g, ''))], country: [hash('bh')] };
-  const ua = req.headers['user-agent'];
-  if (typeof ua === 'string') user_data.client_user_agent = ua.slice(0, 1024);
-  // Vercel overwrites this platform header; do not trust client-supplied body IPs.
-  const ip = req.headers['x-vercel-forwarded-for'];
-  if (typeof ip === 'string') user_data.client_ip_address = ip.split(',')[0].trim();
-  for (const [key, cookie] of Object.entries({ fbp, fbc })) {
-    if (typeof cookie === 'string' && /^fb\.\d+\.\d+\.[A-Za-z0-9_.-]+$/.test(cookie) && cookie.length <= 512) user_data[key] = cookie;
-  }
-  const payload = { data: [{ event_name: 'Purchase', event_time: Math.floor(Date.now()/1000), event_id,
-    action_source: 'website', event_source_url: source.origin + source.pathname, user_data,
-    custom_data: { value, currency: 'BHD', content_name: 'JoyPretty Vitamin C Eye Serum' } }] };
-  if (META_TEST_CODE) payload.test_event_code = META_TEST_CODE;
-  try {
-    const upstream = await fetch(`https://graph.facebook.com/${version}/${META_PIXEL_ID}/events`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${META_CAPI_TOKEN}` },
-      body: JSON.stringify(payload), signal: AbortSignal.timeout(8000)
+    const r = await fetch(`https://graph.facebook.com/${ver}/${PIXEL}/events`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(8000)
     });
-    const result = await upstream.json();
-    if (!upstream.ok || result.events_received !== 1) return res.status(502).json({ error: 'Tracking delivery failed' });
-    return res.status(200).json({ ok: true, event_id });
-  } catch { return res.status(502).json({ error: 'Tracking delivery failed' }); }
+    const j = await r.json();
+    const accepted = r.ok && j.events_received === 1;
+    return res.status(accepted ? 200 : 502).json({
+      ok: accepted,
+      event_id: String(b.event_id),
+      pixel_id: PIXEL,
+      test_mode: Boolean(TEST_CODE),
+      test_event_code: TEST_CODE || null,
+      // Return diagnostics without forwarding raw upstream errors or customer data.
+      ...(accepted ? { events_received: j.events_received } : {
+        error: 'Tracking delivery failed',
+        meta_error_code: j.error?.code,
+        meta_error_subcode: j.error?.error_subcode
+      })
+    });
+  } catch (e) {
+    return res.status(502).json({ ok: false });
+  }
 };
+
