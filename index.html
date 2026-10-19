@@ -224,12 +224,15 @@ function purchaseEventId(){
   return (c==='x'?r:(r&3)|8).toString(16);
  });
 }
+// Meta reporting only: checkout and order storage remain in BHD.
+// Reference peg: 1 USD = 0.376 BHD. Keep the browser and API calculation identical.
+function metaPurchaseValue(valueBHD){return Math.round((Number(valueBHD)/0.376)*100)/100}
 function trackPurchase(L){
  const eid=purchaseEventId();
  window.aylaraTracking={event_id:eid,browser:'unavailable',server:'pending'};
  try{
   if(typeof window.fbq==='function'){
-   window.fbq('track','Purchase',{value:L.total,currency:'BHD',content_name:'JoyPretty Vitamin C Eye Serum - '+L.offer},{eventID:eid});
+   window.fbq('track','Purchase',{value:metaPurchaseValue(L.total),currency:'USD',content_name:'JoyPretty Vitamin C Eye Serum - '+L.offer},{eventID:eid});
    window.aylaraTracking.browser='queued';
   }
  }catch(x){window.aylaraTracking.browser='failed'}
@@ -265,3 +268,4 @@ render();
 </script>
 </body>
 </html>
+
