@@ -1,4 +1,7 @@
 const crypto = require('crypto');
+// Meta reporting only: checkout and order storage remain in BHD.
+// Reference peg: 1 USD = 0.376 BHD. Keep the browser and API calculation identical.
+function metaPurchaseValue(valueBHD){return Math.round((Number(valueBHD)/0.376)*100)/100}
 const sha = v => crypto.createHash('sha256').update(String(v).trim().toLowerCase()).digest('hex');
 
 module.exports = async (req, res) => {
@@ -39,8 +42,8 @@ module.exports = async (req, res) => {
       action_source: 'website',
       user_data: user,
       custom_data: {
-        value: Number(b.value) || 0,
-        currency: 'BHD',
+        value: metaPurchaseValue(Number(b.value) || 0),
+        currency: 'USD',
         content_name: 'JoyPretty Vitamin C Eye Serum - ' + (b.offer || '')
       }
     }]
@@ -74,4 +77,5 @@ module.exports = async (req, res) => {
     return res.status(502).json({ ok: false });
   }
 };
+
 
