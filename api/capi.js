@@ -4,7 +4,7 @@ const sha = v => crypto.createHash('sha256').update(String(v).trim().toLowerCase
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ ok: false });
 
-  const PIXEL = process.env.META_PIXEL_ID || '1717283932700624';
+  const PIXEL = process.env.META_PIXEL_ID || '1114550287797449';
   const TOKEN = process.env.META_CAPI_TOKEN;
   if (!TOKEN) return res.status(500).json({ ok: false, error: 'META_CAPI_TOKEN is missing' });
 
