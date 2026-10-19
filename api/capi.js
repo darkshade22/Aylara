@@ -2,9 +2,11 @@ const crypto = require('crypto');
 const sha = v => crypto.createHash('sha256').update(String(v).trim().toLowerCase()).digest('hex');
 
 module.exports = async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ ok: false });
 
-  const PIXEL = process.env.META_PIXEL_ID || '1114550287797449';
+  const PIXEL = (process.env.META_PIXEL_ID || '1114550287797449').trim();
+  const TEST_CODE = (process.env.META_TEST_CODE || '').trim();
   const TOKEN = process.env.META_CAPI_TOKEN;
   if (!TOKEN) return res.status(500).json({ ok: false, error: 'META_CAPI_TOKEN is missing' });
 
@@ -43,18 +45,33 @@ module.exports = async (req, res) => {
       }
     }]
   };
-  if (process.env.META_TEST_CODE) payload.test_event_code = process.env.META_TEST_CODE;
+  if (TEST_CODE) payload.test_event_code = TEST_CODE;
 
-  const ver = process.env.META_API_VERSION || 'v23.0';
+  const ver = (process.env.META_API_VERSION || 'v23.0').trim();
   try {
-    const r = await fetch(`https://graph.facebook.com/${ver}/${PIXEL}/events?access_token=${TOKEN}`, {
+    const r = await fetch(`https://graph.facebook.com/${ver}/${PIXEL}/events`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(8000)
     });
     const j = await r.json();
-    return res.status(r.ok ? 200 : 502).json({ ok: r.ok, meta: j });
+    const accepted = r.ok && j.events_received === 1;
+    return res.status(accepted ? 200 : 502).json({
+      ok: accepted,
+      event_id: String(b.event_id),
+      pixel_id: PIXEL,
+      test_mode: Boolean(TEST_CODE),
+      test_event_code: TEST_CODE || null,
+      // Return diagnostics without forwarding raw upstream errors or customer data.
+      ...(accepted ? { events_received: j.events_received } : {
+        error: 'Tracking delivery failed',
+        meta_error_code: j.error?.code,
+        meta_error_subcode: j.error?.error_subcode
+      })
+    });
   } catch (e) {
     return res.status(502).json({ ok: false });
   }
 };
+
