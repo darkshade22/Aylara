@@ -174,7 +174,7 @@ input,select{transition:border-color .2s,box-shadow .2s}input:focus,select:focus
 <script>
 const WA='';            // رقم واتساب بصيغة 973XXXXXXXX (اختياري)
 const ENDPOINT='https://script.google.com/macros/s/AKfycbw2YzXlepcX2WSfuBOyRVx6kyBxk0VudVlUgDbPUmmb1MWhW1ZQppvPUS_XxKyoGQC4zw/exec';      // رابط استقبال الطلبات (Google Sheets / Formspree / API) بعد الاستضافة
-const META_PIXEL_ID='1717283932700624';    // معرّف بكسل ميتا (فيسبوك/انستغرام)
+const META_PIXEL_ID='1114550287797449';    // معرّف بكسل ميتا (فيسبوك/انستغرام)
 const TIKTOK_PIXEL_ID='';  // معرّف بكسل تيك توك
 try{
 if(META_PIXEL_ID){!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init',META_PIXEL_ID);fbq('track','PageView');}
@@ -198,15 +198,16 @@ $('[data-f]').forEach(f=>{
  '<label>المدينة</label><select name="city"><option value="">اختاري المدينة</option>'+C.map(c=>'<option>'+c+'</option>').join('')+'</select>'+
  '<div class="err"></div><button class="btn" type="submit">أكّدي طلبج الحين</button></form><p class="fine">⏱ دقيقة وحدة · 📞 نتصل بج للتأكيد · 🔒 بياناتج بس للتواصل معج</p>';
  f.querySelector('form').onsubmit=async e=>{
-  e.preventDefault();const fm=e.target,er=fm.querySelector('.err');
+  e.preventDefault();const fm=e.target,er=fm.querySelector('.err');if(window.aylaraSubmitting)return;
   const name=fm.name.value.trim();let ph=fm.phone.value.replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/\D/g,'');if(ph.length>8)ph=ph.replace(/^(00)?973/,'');
   if(name.length<2)return er.textContent='اكتبي اسمج من فضلج';
   if(!/^\d{8}$/.test(ph))return er.textContent='رقم الهاتف غير صحيح (8 أرقام)';
   if(!fm.city.value)return er.textContent='اختاري مدينتج';
-  er.textContent='';const sb=fm.querySelector('button');sb.disabled=true;sb.innerHTML='<span class="sp"></span> جاري إرسال طلبج...';const L={name,phone:'+973'+ph,city:fm.city.value,time:'',offer:O[sel].n,boxes:O[sel].b,total:O[sel].p,currency:'BHD',product:'JoyPretty Vitamin C Eye Serum',src:location.search.slice(1)};
+  window.aylaraSubmitting=true;er.textContent='';const sb=fm.querySelector('button');sb.disabled=true;sb.innerHTML='<span class="sp"></span> جاري إرسال طلبج...';const L={name,phone:'+973'+ph,city:fm.city.value,time:'',offer:O[sel].n,boxes:O[sel].b,total:O[sel].p,currency:'BHD',product:'JoyPretty Vitamin C Eye Serum',src:location.search.slice(1)};
   if(ENDPOINT){try{await fetch(ENDPOINT,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(L)})}catch(x){}}
-  try{const eid='l'+Date.now()+Math.random().toString(36).slice(2,8);if(window.fbq)fbq('track','Lead',{value:L.total,currency:'BHD',content_name:'JoyPretty Vitamin C Eye Serum - '+L.offer},{eventID:eid});sendCAPI(L,eid);if(window.ttq)ttq.track('SubmitForm',{value:L.total,currency:'BHD',content_name:'JoyPretty Vitamin C Eye Serum - '+L.offer})}catch(x){}
+
   await new Promise(r=>setTimeout(r,700));showThanks(L);
+  try{const eid='purchase_'+crypto.randomUUID();if(window.fbq)fbq('track','Purchase',{value:L.total,currency:'BHD',content_name:'JoyPretty Vitamin C Eye Serum - '+L.offer},{eventID:eid});sendCAPI(L,eid);if(window.ttq)ttq.track('SubmitForm',{value:L.total,currency:'BHD',content_name:'JoyPretty Vitamin C Eye Serum - '+L.offer})}catch(x){}
  };
 });
 document.addEventListener('click',e=>{const t=e.target.closest('[data-k]');if(t){sel=+t.dataset.k;render();if(t.classList.contains('offer'))setTimeout(()=>document.querySelector('.fb').scrollIntoView({behavior:'smooth',block:'center'}),280)}});
