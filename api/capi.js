@@ -20,7 +20,6 @@ module.exports = async (req, res) => {
   const phone = String(b.phone || '').replace(/\D/g, '');
   if (!b.event_id || phone.length < 8) return res.status(400).json({ ok: false });
 
-  const first = String(b.name || '').trim().split(/\s+/)[0];
   const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
 
   const user = {
@@ -28,23 +27,31 @@ module.exports = async (req, res) => {
     country: [sha('bh')],
     client_user_agent: req.headers['user-agent'] || ''
   };
-  if (first) user.fn = [sha(first)];
   if (ip) user.client_ip_address = ip;
   if (b.fbp) user.fbp = b.fbp;
   if (b.fbc) user.fbc = b.fbc;
+
+  // Keep the actual page origin/path; do not forward query strings or fragments.
+  let sourceUrl;
+  try {
+    const source = new URL(b.url);
+    if (!['https:', 'http:'].includes(source.protocol) || source.username || source.password) throw new Error();
+    sourceUrl = source.origin + source.pathname;
+  } catch {
+    return res.status(400).json({ ok: false, error: 'Invalid source URL' });
+  }
 
   const payload = {
     data: [{
       event_name: 'Purchase',
       event_time: Math.floor(Date.now() / 1000),
       event_id: String(b.event_id),
-      event_source_url: b.url,
+      event_source_url: sourceUrl,
       action_source: 'website',
       user_data: user,
       custom_data: {
         value: metaPurchaseValue(Number(b.value) || 0),
-        currency: 'USD',
-        content_name: 'JoyPretty Vitamin C Eye Serum - ' + (b.offer || '')
+        currency: 'USD'
       }
     }]
   };
@@ -77,5 +84,6 @@ module.exports = async (req, res) => {
     return res.status(502).json({ ok: false });
   }
 };
+
 
 
