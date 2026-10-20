@@ -233,7 +233,7 @@ function trackPurchase(L){
  window.aylaraTracking={event_id:eid,browser:'unavailable',server:'pending'};
  try{
   if(typeof window.fbq==='function'){
-   window.fbq('track','Purchase',{value:metaPurchaseValue(L.total),currency:'USD',content_name:'JoyPretty Vitamin C Eye Serum - '+L.offer},{eventID:eid});
+   window.fbq('track','Purchase',{value:metaPurchaseValue(L.total),currency:'USD'},{eventID:eid});
    window.aylaraTracking.browser='queued';
   }
  }catch(x){window.aylaraTracking.browser='failed'}
@@ -247,7 +247,7 @@ async function sendCAPI(L,eid){
   const q=new URLSearchParams(location.search).get('fbclid');let fbc=ck('_fbc');
   if(!fbc&&q)fbc='fb.1.'+Date.now()+'.'+q;
   const r=await fetch('/api/capi',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json'},
-   body:JSON.stringify({event_id:eid,name:L.name,phone:L.phone,value:L.total,offer:L.offer,url:location.href,fbp:ck('_fbp'),fbc})});
+   body:JSON.stringify({event_id:eid,phone:L.phone,value:L.total,url:location.origin+location.pathname,fbp:ck('_fbp'),fbc})});
   const result=await r.json();
   if(!r.ok||!result.ok)throw new Error('Tracking delivery failed');
   Object.assign(window.aylaraTracking,{server:'accepted',pixel_id:result.pixel_id,test_mode:result.test_mode,test_event_code:result.test_event_code});
@@ -269,5 +269,6 @@ render();
 </script>
 </body>
 </html>
+
 
 
